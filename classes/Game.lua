@@ -3,7 +3,6 @@
 -- Copyright (c) 2025 Jericho Crosby (Chalwk)
 
 local ipairs = ipairs
-local math_sin = math.sin
 local math_random = math.random
 local table_insert = table.insert
 
@@ -28,13 +27,38 @@ function Game.new()
     instance.gameOver = false
     instance.winner = nil
     instance.moveHistory = {}
-    instance.gameMode = "2player" -- "2player" or "ai"
+    instance.gameMode = "2player"    -- "2player" or "ai"
     instance.aiDifficulty = "medium" -- "easy", "medium", "hard"
     instance.showDebug = false
     instance.lastAIMoveTime = 0
     instance.aiMoveDelay = 0.5 -- seconds between AI moves
 
+    -- Add screen shake effect
+    instance.screenShake = {
+        intensity = 0,
+        duration = 0,
+        timer = 0,
+        active = false
+    }
+
     return instance
+end
+
+function Game:updateScreenShake(dt)
+    if self.screenShake.active then
+        self.screenShake.timer = self.screenShake.timer + dt
+        if self.screenShake.timer >= self.screenShake.duration then
+            self.screenShake.active = false
+            self.screenShake.intensity = 0
+        end
+    end
+end
+
+function Game:triggerScreenShake()
+    self.screenShake.intensity = 10
+    self.screenShake.duration = 0.3
+    self.screenShake.timer = 0
+    self.screenShake.active = true
 end
 
 function Game:setScreenSize(width, height)
@@ -66,6 +90,8 @@ function Game:update(dt)
     if self.board then
         self.board:update(dt)
 
+        -- Update screen shake
+        self:updateScreenShake(dt)
         -- Update hover effect
         if not self.gameOver and (self.gameMode == "2player" or self.currentPlayer == 1) then
             local x, y = love.mouse.getPosition()
@@ -86,6 +112,18 @@ end
 function Game:draw()
     if not self.board then return end
 
+    -- Apply screen shake if active
+    local offsetX, offsetY = 0, 0
+    if self.screenShake.active then
+        local progress = self.screenShake.timer / self.screenShake.duration
+        local currentIntensity = self.screenShake.intensity * (1 - progress)
+        offsetX = love.math.random(-currentIntensity, currentIntensity)
+        offsetY = love.math.random(-currentIntensity, currentIntensity)
+    end
+
+    love.graphics.push()
+    love.graphics.translate(offsetX, offsetY)
+
     -- Draw board
     self.board:draw()
 
@@ -101,16 +139,16 @@ function Game:draw()
     if self.showDebug then
         self:drawDebugInfo()
     end
+
+    love.graphics.pop()
 end
 
 function Game:drawUI()
-    local font = love.graphics.getFont()
 
     -- Draw current player indicator with animation
-    local pulse = (math_sin(love.timer.getTime() * 5) + 1) * 0.2
     love.graphics.setColor(self.playerColors[self.currentPlayer][1],
-                          self.playerColors[self.currentPlayer][2],
-                          self.playerColors[self.currentPlayer][3])
+        self.playerColors[self.currentPlayer][2],
+        self.playerColors[self.currentPlayer][3])
 
     if self.gameMode == "ai" and self.currentPlayer == 2 then
         love.graphics.print("AI's Turn", 20, 20)
@@ -156,7 +194,8 @@ function Game:drawGameOver()
         if self.gameMode == "ai" and self.winner == 2 then
             love.graphics.printf("AI Wins!", 0, self.screenHeight / 2 - 50, self.screenWidth, "center")
         else
-            love.graphics.printf(self.playerNames[self.winner] .. " Wins!", 0, self.screenHeight / 2 - 50, self.screenWidth, "center")
+            love.graphics.printf(self.playerNames[self.winner] .. " Wins!", 0, self.screenHeight / 2 - 50,
+                self.screenWidth, "center")
         end
     else
         love.graphics.setColor(1, 1, 1)
@@ -167,7 +206,7 @@ function Game:drawGameOver()
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(love.graphics.newFont(24))
     love.graphics.printf(self.playerScores[1] .. " - " .. self.playerScores[2],
-                        0, self.screenHeight / 2 + 10, self.screenWidth, "center")
+        0, self.screenHeight / 2 + 10, self.screenWidth, "center")
 
     local smallFont = love.graphics.newFont(20)
     love.graphics.setFont(smallFont)
@@ -187,16 +226,22 @@ function Game:drawDebugInfo()
 end
 
 function Game:handleClick(x, y)
-    if self.gameOver then
-        return true
-    end
+    if self.gameOver then return true end
 
     -- Don't process clicks during AI turn
-    if self.gameMode == "ai" and self.currentPlayer == 2 then
-        return false
-    end
+    if self.gameMode == "ai" and self.currentPlayer == 2 then return false end
 
     if self.board then
+        -- First check if it's a valid move
+        local clickedLine = self.board:getLineAtPosition(x, y)
+        if not clickedLine or clickedLine.line.drawn then
+            self.board.invalidClickEffect.x = x
+            self.board.invalidClickEffect.y = y
+            self.board.invalidClickEffect.alpha = 1
+            self:triggerScreenShake() -- Add this line
+            return false
+        end
+
         local completedBox = self.board:handleClick(x, y, self.currentPlayer, self.playerColors[self.currentPlayer])
 
         if completedBox then
@@ -408,7 +453,7 @@ function Game:undoMove()
         self.board:undoLastMove(self.moveHistory)
 
         -- Update scores
-        self.playerScores = {0, 0}
+        self.playerScores = { 0, 0 }
         for row = 1, self.board.size do
             for col = 1, self.board.size do
                 if self.board.boxes[row][col].owner then

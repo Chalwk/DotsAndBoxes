@@ -1,10 +1,10 @@
 -- Dots & Boxes - Love2D Game
+-- Fixed Options layout
 -- License: MIT
 -- Copyright (c) 2025 Jericho Crosby (Chalwk)
 
 local ipairs = ipairs
 local math_sin = math.sin
-local math_floor = math.floor
 
 local Menu = {}
 Menu.__index = Menu
@@ -29,9 +29,10 @@ function Menu.new()
         rotationSpeed = 0.5
     }
 
-    instance.smallFont = love.graphics.newFont(20)
-    instance.mediumFont = love.graphics.newFont(30)
-    instance.largeFont = love.graphics.newFont(40)
+    instance.smallFont = love.graphics.newFont(18)
+    instance.mediumFont = love.graphics.newFont(24)
+    instance.largeFont = love.graphics.newFont(36)
+    instance.sectionFont = love.graphics.newFont(20)
 
     instance:createMenuButtons()
     instance:createOptionsButtons()
@@ -43,6 +44,7 @@ function Menu:setScreenSize(width, height)
     self.screenWidth = width
     self.screenHeight = height
     self:updateButtonPositions()
+    self:updateOptionsButtonPositions()
 end
 
 function Menu:createMenuButtons()
@@ -50,7 +52,7 @@ function Menu:createMenuButtons()
         {
             text = "Start Game",
             action = "start",
-            width = 200,
+            width = 220,
             height = 50,
             x = 0,
             y = 0
@@ -58,7 +60,7 @@ function Menu:createMenuButtons()
         {
             text = "Options",
             action = "options",
-            width = 200,
+            width = 220,
             height = 50,
             x = 0,
             y = 0
@@ -66,7 +68,7 @@ function Menu:createMenuButtons()
         {
             text = "Quit",
             action = "quit",
-            width = 200,
+            width = 220,
             height = 50,
             x = 0,
             y = 0
@@ -77,85 +79,102 @@ end
 
 function Menu:createOptionsButtons()
     self.optionsButtons = {
-        {
-            text = "Back",
-            action = "back",
-            width = 200,
-            height = 50,
-            x = 0,
-            y = 0
-        },
+        -- Board Size Section
         {
             text = "3x3",
             action = "size 3",
-            width = 100,
-            height = 40,
+            width = 80,
+            height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "size"
         },
         {
             text = "4x4",
             action = "size 4",
-            width = 100,
-            height = 40,
+            width = 80,
+            height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "size"
         },
         {
             text = "5x5",
             action = "size 5",
-            width = 100,
-            height = 40,
+            width = 80,
+            height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "size"
         },
         {
             text = "6x6",
             action = "size 6",
-            width = 100,
-            height = 40,
+            width = 80,
+            height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "size"
         },
+
+        -- Game Mode Section
         {
             text = "2 Players",
             action = "mode 2player",
-            width = 150,
+            width = 140,
             height = 40,
             x = 0,
-            y = 0
+            y = 0,
+            section = "mode"
         },
         {
             text = "VS AI",
             action = "mode ai",
-            width = 150,
+            width = 140,
             height = 40,
             x = 0,
-            y = 0
+            y = 0,
+            section = "mode"
         },
+
+        -- AI Difficulty Section
         {
             text = "Easy",
             action = "ai_easy",
-            width = 120,
+            width = 100,
             height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "difficulty"
         },
         {
             text = "Medium",
             action = "ai_medium",
-            width = 120,
+            width = 100,
             height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "difficulty"
         },
         {
             text = "Hard",
             action = "ai_hard",
-            width = 120,
+            width = 100,
             height = 35,
             x = 0,
-            y = 0
+            y = 0,
+            section = "difficulty"
+        },
+
+        -- Navigation
+        {
+            text = "Back to Menu",
+            action = "back",
+            width = 180,
+            height = 45,
+            x = 0,
+            y = 0,
+            section = "navigation"
         }
     }
     self:updateOptionsButtonPositions()
@@ -169,35 +188,61 @@ function Menu:updateButtonPositions()
     end
 end
 
+-- Keep options layout math consistent between measurement and drawing
 function Menu:updateOptionsButtonPositions()
     local centerX = self.screenWidth / 2
-    local baseY = self.screenHeight / 3 + 40 -- consistent anchor under title
 
-    -- Back button
-    self.optionsButtons[1].x = centerX - self.optionsButtons[1].width / 2
-    self.optionsButtons[1].y = self.screenHeight - 100
+    -- Use the same vertical layout constants as drawOptionsInterface so text and
+    -- buttons line up reliably at different resolutions
+    local totalSectionsHeight = 300 -- total vertical space used by all option sections
+    local startY = (self.screenHeight - totalSectionsHeight) / 2
 
-    -- Board size buttons (3x3 to 6x6)
-    local sizeSpacing = 120
-    local sizeStartX = centerX - (sizeSpacing * 1.5) + 10 -- centers 4 buttons
-    for i = 2, 5 do
-        self.optionsButtons[i].x = sizeStartX + (i - 2) * sizeSpacing
-        self.optionsButtons[i].y = baseY + 60
-    end
+    -- Board Size Section - 4 small buttons with 20px spacing
+    local sizeButtonW, sizeButtonH, sizeSpacing = 80, 35, 20
+    local sizeTotalW = 4 * sizeButtonW + 3 * sizeSpacing
+    local sizeStartX = centerX - sizeTotalW / 2
+    local sizeY = startY + 30
 
-    -- Game mode buttons (2P, AI)
-    local modeSpacing = 180
-    self.optionsButtons[6].x = centerX - modeSpacing / 2 - self.optionsButtons[6].width / 2
-    self.optionsButtons[6].y = baseY + 140
-    self.optionsButtons[7].x = centerX + modeSpacing / 2 - self.optionsButtons[7].width / 2
-    self.optionsButtons[7].y = baseY + 140
+    -- Game Mode - 2 larger buttons
+    local modeButtonW, modeButtonH, modeSpacing = 140, 40, 20
+    local modeTotalW = 2 * modeButtonW + modeSpacing
+    local modeStartX = centerX - modeTotalW / 2
+    local modeY = startY + 110
 
-    -- AI difficulty buttons (Easy, Medium, Hard)
-    local diffSpacing = 140
-    local diffStartX = centerX - diffSpacing
-    for i = 8, 10 do
-        self.optionsButtons[i].x = diffStartX + (i - 8) * diffSpacing
-        self.optionsButtons[i].y = baseY + 210
+    -- AI Difficulty - 3 medium buttons
+    local diffButtonW, diffButtonH, diffSpacing = 100, 35, 20
+    local diffTotalW = 3 * diffButtonW + 2 * diffSpacing
+    local diffStartX = centerX - diffTotalW / 2
+    local diffY = startY + 190
+
+    -- Navigation
+    local navY = self.gameMode == "ai" and startY + 270 or startY + 230
+
+    -- Assign positions by section in a clear, index-free way
+    local sizeIndex, modeIndex, diffIndex = 0, 0, 0
+    for _, button in ipairs(self.optionsButtons) do
+        if button.section == "size" then
+            button.width = sizeButtonW
+            button.height = sizeButtonH
+            button.x = sizeStartX + sizeIndex * (sizeButtonW + sizeSpacing)
+            button.y = sizeY
+            sizeIndex = sizeIndex + 1
+        elseif button.section == "mode" then
+            button.width = modeButtonW
+            button.height = modeButtonH
+            button.x = modeStartX + modeIndex * (modeButtonW + modeSpacing)
+            button.y = modeY
+            modeIndex = modeIndex + 1
+        elseif button.section == "difficulty" then
+            button.width = diffButtonW
+            button.height = diffButtonH
+            button.x = diffStartX + diffIndex * (diffButtonW + diffSpacing)
+            button.y = diffY
+            diffIndex = diffIndex + 1
+        elseif button.section == "navigation" then
+            button.x = centerX - button.width / 2
+            button.y = navY
+        end
     end
 end
 
@@ -229,7 +274,7 @@ function Menu:draw(screenWidth, screenHeight, state)
     love.graphics.setFont(self.largeFont)
 
     love.graphics.push()
-    love.graphics.translate(screenWidth / 2, screenHeight / 4)
+    love.graphics.translate(screenWidth / 2, screenHeight / 6)
     love.graphics.rotate(math_sin(self.title.rotation) * 0.1)
     love.graphics.scale(self.title.scale, self.title.scale)
     love.graphics.printf(self.title.text, -screenWidth / 2, -self.largeFont:getHeight() / 2, screenWidth, "center")
@@ -238,36 +283,92 @@ function Menu:draw(screenWidth, screenHeight, state)
     if state == "menu" then
         self:drawMenuButtons()
         -- Draw instructions
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(0.9, 0.9, 0.9)
         love.graphics.setFont(self.smallFont)
         love.graphics.printf("Connect dots to complete boxes!\nTwo player turn-based game.",
-            0, screenHeight / 4 + 80, screenWidth, "center")
+            0, screenHeight / 4 + 60, screenWidth, "center")
     elseif state == "options" then
-        self:drawOptionsButtons()
-
-        -- Draw current selections - moved down to avoid title
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(self.mediumFont)
-
-        -- Board size text
-        love.graphics.printf("Board Size: " .. self.boardSize .. "x" .. self.boardSize,
-            0, screenHeight / 4 + 40, screenWidth, "center") -- Added +40 to move down
-
-        -- Game mode text
-        love.graphics.printf("Game Mode: " .. (self.gameMode == "ai" and "VS AI" or "2 Players"),
-            0, screenHeight / 4 + 80, screenWidth, "center") -- Added +80 to move down
-
-        -- AI difficulty text (only show if in AI mode)
-        if self.gameMode == "ai" then
-            love.graphics.printf("AI Difficulty: " .. self.aiDifficulty:gsub("^%l", string.upper),
-                0, screenHeight / 4 + 120, screenWidth, "center") -- Added +120 to move down
-        end
+        self:drawOptionsInterface()
     end
 
     -- Draw copyright
-    love.graphics.setColor(1, 1, 1, 0.6)
+    love.graphics.setColor(1, 1, 1, 0.5)
     love.graphics.setFont(self.smallFont)
     love.graphics.printf("© 2025 Jericho Crosby – Dots & Boxes", 10, screenHeight - 25, screenWidth - 20, "right")
+end
+
+function Menu:drawOptionsInterface()
+
+    -- Use the same total height as updateOptionsButtonPositions
+    local totalSectionsHeight = 300
+    local startY = (self.screenHeight - totalSectionsHeight) / 2
+
+    -- Draw section headers and buttons with proper spacing
+    love.graphics.setFont(self.sectionFont)
+
+    -- Board Size Section
+    love.graphics.setColor(0.8, 0.8, 1)
+    love.graphics.printf("Board Size", 0, startY + 5, self.screenWidth, "center")
+    -- Buttons already positioned by updateOptionsButtonPositions
+
+    -- Game Mode Section
+    love.graphics.setColor(0.8, 0.8, 1)
+    love.graphics.printf("Game Mode", 0, startY + 85, self.screenWidth, "center")
+
+    -- AI Difficulty Section (only show if in AI mode)
+    if self.gameMode == "ai" then
+        love.graphics.setColor(0.8, 0.8, 1)
+        love.graphics.printf("AI Difficulty", 0, startY + 165, self.screenWidth, "center")
+    end
+
+    -- Ensure buttons are placed for the current screen size
+    self:updateOptionsButtonPositions()
+
+    -- Draw the sections in a stable order so selection highlight appears behind text
+    self:drawOptionSection("size")
+    self:drawOptionSection("mode")
+    if self.gameMode == "ai" then
+        self:drawOptionSection("difficulty")
+    end
+
+    -- Navigation buttons - adjust position based on whether AI section is visible
+    self:drawOptionSection("navigation")
+end
+
+function Menu:drawOptionSection(section)
+    for _, button in ipairs(self.optionsButtons) do
+        if button.section == section then
+            if section == "difficulty" and self.gameMode ~= "ai" then
+                goto continue
+            end
+
+            -- Draw the button first
+            self:drawButton(button)
+
+            -- Then draw the highlight *on top* of it
+            if button.action:sub(1, 4) == "size" then
+                local size = tonumber(button.action:sub(6))
+                if size == self.boardSize then
+                    love.graphics.setColor(0.2, 0.8, 0.2, 0.4)
+                    love.graphics.rectangle("fill", button.x - 3, button.y - 3, button.width + 6, button.height + 6, 5)
+                end
+            elseif button.action:sub(1, 4) == "mode" then
+                local mode = button.action:sub(6)
+                if mode == self.gameMode then
+                    love.graphics.setColor(0.2, 0.8, 0.2, 0.4)
+                    love.graphics.rectangle("fill", button.x - 3, button.y - 3, button.width + 6, button.height + 6, 5)
+                end
+            elseif button.action:sub(1, 3) == "ai_" then
+                local difficulty = button.action:sub(4)
+                if difficulty == self.aiDifficulty then
+                    love.graphics.setColor(0.2, 0.8, 0.2, 0.4)
+                    love.graphics.rectangle("fill", button.x - 3, button.y - 3, button.width + 6, button.height + 6, 5)
+                end
+            end
+
+            ::continue::
+        end
+    end
 end
 
 function Menu:drawMenuButtons()
@@ -276,48 +377,15 @@ function Menu:drawMenuButtons()
     end
 end
 
-function Menu:drawOptionsButtons()
-    for _, button in ipairs(self.optionsButtons) do
-        self:drawButton(button)
-
-        -- Highlight selected board size
-        if button.action:sub(1, 4) == "size" then
-            local size = tonumber(button.action:sub(6))
-            if size == self.boardSize then
-                love.graphics.setColor(0, 1, 0, 0.3)
-                love.graphics.rectangle("fill", button.x - 5, button.y - 5, button.width + 10, button.height + 10)
-            end
-        end
-
-        -- Highlight selected game mode
-        if button.action:sub(1, 4) == "mode" then
-            local mode = button.action:sub(6)
-            if mode == self.gameMode then
-                love.graphics.setColor(0, 1, 0, 0.3)
-                love.graphics.rectangle("fill", button.x - 5, button.y - 5, button.width + 10, button.height + 10)
-            end
-        end
-
-        -- Highlight selected AI difficulty
-        if button.action:sub(1, 3) == "ai_" then
-            local difficulty = button.action:sub(4)
-            if difficulty == self.aiDifficulty then
-                love.graphics.setColor(0, 1, 0, 0.3)
-                love.graphics.rectangle("fill", button.x - 5, button.y - 5, button.width + 10, button.height + 10)
-            end
-        end
-    end
-end
-
 function Menu:drawButton(button)
-    -- Button background
-    love.graphics.setColor(0.3, 0.3, 0.5, 0.8)
-    love.graphics.rectangle("fill", button.x, button.y, button.width, button.height)
+    -- Button background with rounded corners
+    love.graphics.setColor(0.25, 0.25, 0.4, 0.9)
+    love.graphics.rectangle("fill", button.x, button.y, button.width, button.height, 8, 8)
 
     -- Button border
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(0.6, 0.6, 1)
     love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", button.x, button.y, button.width, button.height)
+    love.graphics.rectangle("line", button.x, button.y, button.width, button.height, 8, 8)
 
     -- Button text
     love.graphics.setColor(1, 1, 1)
@@ -334,10 +402,17 @@ function Menu:handleClick(x, y, state)
     local buttons = state == "menu" and self.menuButtons or self.optionsButtons
 
     for _, button in ipairs(buttons) do
+        -- Skip AI difficulty buttons if not in AI mode
+        if state == "options" and button.section == "difficulty" and self.gameMode ~= "ai" then
+            goto continue
+        end
+
         if x >= button.x and x <= button.x + button.width and
             y >= button.y and y <= button.y + button.height then
             return button.action
         end
+
+        ::continue::
     end
 
     return nil

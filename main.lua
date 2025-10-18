@@ -92,11 +92,14 @@ function love.mousepressed(x, y, button, istouch)
                 menu:setAIDifficulty(difficulty)
             end
         elseif gameState == "playing" then
-            if game:handleClick(x, y) then
-                -- Check if game is over
-                if game:isGameOver() then
-                    -- Return to menu after a short delay or on click
-                    -- For now, we'll stay in playing state and show game over screen
+            -- Check if game is over first
+            if game:isGameOver() then
+                -- Return to menu when clicked anywhere after game over
+                gameState = "menu"
+            else
+                -- Normal gameplay
+                if game:handleClick(x, y) then
+                    -- Game logic handled in the handleClick method
                 end
             end
         end
