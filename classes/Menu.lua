@@ -16,7 +16,7 @@ function Menu.new()
     instance.screenWidth = 800
     instance.screenHeight = 600
     instance.boardSize = 5
-    instance.gameMode = "2player" -- "2player" or "ai"
+    instance.gameMode = "2player"    -- "2player" or "ai"
     instance.aiDifficulty = "medium" -- "easy", "medium", "hard"
     instance.title = {
         text = "Dots & Boxes",
@@ -134,7 +134,7 @@ function Menu:createOptionsButtons()
             y = 0
         },
         {
-            text = "Easy AI",
+            text = "Easy",
             action = "ai_easy",
             width = 120,
             height = 35,
@@ -142,7 +142,7 @@ function Menu:createOptionsButtons()
             y = 0
         },
         {
-            text = "Medium AI",
+            text = "Medium",
             action = "ai_medium",
             width = 120,
             height = 35,
@@ -150,7 +150,7 @@ function Menu:createOptionsButtons()
             y = 0
         },
         {
-            text = "Hard AI",
+            text = "Hard",
             action = "ai_hard",
             width = 120,
             height = 35,
@@ -170,32 +170,35 @@ function Menu:updateButtonPositions()
 end
 
 function Menu:updateOptionsButtonPositions()
-    -- Position back button
-    self.optionsButtons[1].x = (self.screenWidth - self.optionsButtons[1].width) / 2
+    local centerX = self.screenWidth / 2
+    local baseY = self.screenHeight / 3 + 40 -- consistent anchor under title
+
+    -- Back button
+    self.optionsButtons[1].x = centerX - self.optionsButtons[1].width / 2
     self.optionsButtons[1].y = self.screenHeight - 100
 
-    -- Position size buttons
-    local startX = (self.screenWidth - 500) / 2
+    -- Board size buttons (3x3 to 6x6)
+    local sizeSpacing = 120
+    local sizeStartX = centerX - (sizeSpacing * 1.5) + 10 -- centers 4 buttons
     for i = 2, 5 do
-        local col = (i - 2) % 2
-        local row = math_floor((i - 2) / 2)
-        self.optionsButtons[i].x = startX + col * 250
-        self.optionsButtons[i].y = self.screenHeight / 3 + row * 60
+        self.optionsButtons[i].x = sizeStartX + (i - 2) * sizeSpacing
+        self.optionsButtons[i].y = baseY + 60
     end
 
-    -- Position game mode buttons
-    self.optionsButtons[6].x = (self.screenWidth - 320) / 2
-    self.optionsButtons[6].y = self.screenHeight / 2 + 40
-    self.optionsButtons[7].x = self.optionsButtons[6].x + 170
-    self.optionsButtons[7].y = self.screenHeight / 2 + 40
+    -- Game mode buttons (2P, AI)
+    local modeSpacing = 180
+    self.optionsButtons[6].x = centerX - modeSpacing / 2 - self.optionsButtons[6].width / 2
+    self.optionsButtons[6].y = baseY + 140
+    self.optionsButtons[7].x = centerX + modeSpacing / 2 - self.optionsButtons[7].width / 2
+    self.optionsButtons[7].y = baseY + 140
 
-    -- Position AI difficulty buttons
-    self.optionsButtons[8].x = (self.screenWidth - 400) / 2
-    self.optionsButtons[8].y = self.screenHeight / 2 + 100
-    self.optionsButtons[9].x = self.optionsButtons[8].x + 140
-    self.optionsButtons[9].y = self.screenHeight / 2 + 100
-    self.optionsButtons[10].x = self.optionsButtons[9].x + 140
-    self.optionsButtons[10].y = self.screenHeight / 2 + 100
+    -- AI difficulty buttons (Easy, Medium, Hard)
+    local diffSpacing = 140
+    local diffStartX = centerX - diffSpacing
+    for i = 8, 10 do
+        self.optionsButtons[i].x = diffStartX + (i - 8) * diffSpacing
+        self.optionsButtons[i].y = baseY + 210
+    end
 end
 
 function Menu:update(dt, screenWidth, screenHeight)
@@ -241,18 +244,23 @@ function Menu:draw(screenWidth, screenHeight, state)
             0, screenHeight / 4 + 80, screenWidth, "center")
     elseif state == "options" then
         self:drawOptionsButtons()
-        -- Draw current selections
+
+        -- Draw current selections - moved down to avoid title
         love.graphics.setColor(1, 1, 1)
         love.graphics.setFont(self.mediumFont)
+
+        -- Board size text
         love.graphics.printf("Board Size: " .. self.boardSize .. "x" .. self.boardSize,
-            0, screenHeight / 4, screenWidth, "center")
+            0, screenHeight / 4 + 40, screenWidth, "center") -- Added +40 to move down
 
+        -- Game mode text
         love.graphics.printf("Game Mode: " .. (self.gameMode == "ai" and "VS AI" or "2 Players"),
-            0, screenHeight / 4 + 40, screenWidth, "center")
+            0, screenHeight / 4 + 80, screenWidth, "center") -- Added +80 to move down
 
+        -- AI difficulty text (only show if in AI mode)
         if self.gameMode == "ai" then
             love.graphics.printf("AI Difficulty: " .. self.aiDifficulty:gsub("^%l", string.upper),
-                0, screenHeight / 4 + 80, screenWidth, "center")
+                0, screenHeight / 4 + 120, screenWidth, "center") -- Added +120 to move down
         end
     end
 

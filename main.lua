@@ -78,6 +78,7 @@ function love.mousepressed(x, y, button, istouch)
             end
         elseif gameState == "options" then
             local action = menu:handleClick(x, y, "options")
+            if not action then return end
             if action == "back" then
                 gameState = "menu"
             elseif action:sub(1, 4) == "size" then
